@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 
 #define BUFFER_SIZE 1024
-#define FILE_NAME "attendance.tsv"
+#define FILE_NAME_FORMAT "attendance_%s.tsv" // Modified file name format
 
 // Structure to store attendance data
 typedef struct
@@ -20,10 +20,9 @@ typedef struct
 } AttendanceEntry;
 
 // Function to check if the IP address exists in the file
-int isIPDuplicate(const char *ip_address)
+int isIPDuplicate(const char *file_name, const char *ip_address)
 {
-    printf("Checking for duplicate IP: %s\n", ip_address);
-    FILE *file = fopen(FILE_NAME, "r");
+    FILE *file = fopen(file_name, "r");
     if (file == NULL)
     {
         perror("Error opening file");
@@ -37,18 +36,15 @@ int isIPDuplicate(const char *ip_address)
     char line[BUFFER_SIZE];
     while (fgets(line, sizeof(line), file))
     {
-        printf("Read line from file: %s\n", line);
         char ip[BUFFER_SIZE];
-        if (sscanf(line, "%s", ip) == 1 && strcmp(ip, ip_address) == 0)
+        if (sscanf(line, "%*s %s", ip) == 1 && strcmp(ip, ip_address) == 0)
         {
             fclose(file);
-            printf("Duplicate IP found\n");
             return 1; // IP address found
         }
     }
 
     fclose(file);
-    printf("IP not found\n");
     return 0; // IP address not found
 }
 
@@ -95,6 +91,16 @@ int main(int argc, char *argv[])
 
     printf("Server listening on port %d\n", port);
 
+    // Get the current date
+    time_t now = time(NULL);
+    struct tm *local_time = localtime(&now);
+    char date_buffer[20];
+    strftime(date_buffer, sizeof(date_buffer), "%d_%b", local_time); // Format: DD_Mon
+
+    // Create the file name with the current date
+    char FILE_NAME[BUFFER_SIZE];
+    sprintf(FILE_NAME, FILE_NAME_FORMAT, date_buffer);
+
     FILE *file = fopen(FILE_NAME, "w");
     if (file == NULL)
     {
@@ -125,7 +131,7 @@ int main(int argc, char *argv[])
         inet_ntop(AF_INET, &(cliaddr.sin_addr), client_ip, INET_ADDRSTRLEN);
 
         // Check if IP address exists in the file
-        int is_duplicate = isIPDuplicate(client_ip);
+        int is_duplicate = isIPDuplicate(FILE_NAME, client_ip);
 
         // Get current timestamp
         time_t rawtime;
