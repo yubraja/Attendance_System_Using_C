@@ -108,6 +108,8 @@ int main(int argc, char *argv[])
 
         fclose(file); // Close the file after writing
 
+        send(connfd, "Attendance Marked", 17, 0);
+
         printf("Attendance recorded for roll number %s\n", buffer);
 
         close(connfd);
